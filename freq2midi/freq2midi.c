@@ -1,28 +1,44 @@
+/*
+    The Audio Programming Book
+    Exercise: 1.2.6
+*/
+
 #include <stdio.h>
 #include <math.h>
 
 double midi_to_freq(double, double, double, double);
 
 int main(){
-    double fracmidi;
-    double semitone_ratio = 0;
-    double c0;
-    double c5;
-    double lower_freq;
-    double upper_freq;
-    double whole_semi_diff;
-    double partial_diff;
+    double fracmidi,c0,c5,lower_freq,upper_freq,whole_semi_diff,partial_diff,semitone_ratio = 0,note_freq_diff;
     int midinote;
+    char message[256];
+    char* result;
     
     //given frequency
-    double frequency = 898.11;
+    double frequency = 440.0;
     
     semitone_ratio = pow(2, (1 / 12.0));
     c5 = 220.0 * pow(semitone_ratio, 3);
     c0 = c5 * pow(0.5, 5);
     
+    printf("Enter Frequency Note: \n"); 
+    result = fgets(message, sizeof(message), stdin);
+    
+    // check if no response
+    if (result == NULL) {
+        printf("There was an error reading the input. \n");
+        return 1;
+    }
+    // check if empty
+    if (message[0] == '\0'){
+        printf("Peace \n");
+        return 1;
+    }
+    frequency = atoi(message);
+    
     fracmidi = log(frequency / c0) / log(semitone_ratio);
     midinote = (int) (fracmidi + 0.5);
+    printf("%f \n", midinote);
     
     lower_freq = midi_to_freq((double) midinote, semitone_ratio, frequency, c0);
     upper_freq = midi_to_freq(((double) midinote + 1), semitone_ratio, frequency, c0);
