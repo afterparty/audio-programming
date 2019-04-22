@@ -34,7 +34,8 @@ int main(int argc, char* argv[]) {
     
     if( argc < 3 ) {
         printf("Error: this program takes at least 2 arguments");
-        printf("Usage: itable [-m][-i] N startval [outfile.txt]\n");
+        printf("Usage: iscale [-m][-i] N startval [outfile.txt]\n");
+        printf("[-m] is midi; [-i] is display interval\n");
         return 1;
     }   
     
@@ -90,17 +91,28 @@ int main(int argc, char* argv[]) {
     }
     
     for(i = 0; i <= notes; i++) {
+        
+        double current_interval = intervals[i];
+        double interval = pow(ratio, i);
+        
         if(write_interval)
-            printf("%d:\t%f\t%f\n", i , pow(ratio,i), intervals[i]);
+            printf("%d:\t%f\t%f\n", i , interval, current_interval);
         else 
-            printf("%d:\t%f\n", i, intervals[i]);
+            printf("%d:\t%f\n", i, current_interval);
         
         if (fp){
             if (write_interval)
-                err = fprintf(fp, "%d:\t%f\t%f\n", i, pow(ratio,i), intervals[i]);
+                err = fprintf(fp, "%d:\t%f\t%f\n", i, interval, current_interval);
+            else
+                err = fprintf(fp, "%d:\t%f\n", i, current_interval);
+            if (err < 0)
+                break;
         }
     }
     
-    
+    if (err < 0)
+        perror("There was an error writing the file.\n");
+    if (fp)
+        fclose(fp);
     return 0;
 }
