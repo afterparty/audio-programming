@@ -8,14 +8,28 @@
 
 enum { ARG_NAME, ARG_OUTFILE, ARG_DUR, ARG_HZ, ARG_SR,
     ARG_AMP, ARG_NARGS };
+enum samptype { RAWSAMP_SHORT, RAWSAMP_FLOAT }
+
+int byte_order() {
+   int one = 1;
+   char* endptr = (char *);
+   return (*endptr);
+}
+
+const char* endianess[2] = { "big_endian", "little_endian" };
     
 int main(int argc, char** argv) {
        
-    int i, sr, nsamps;
-    double samp, dur, freq, srate, amp, maxsamp;
-    double start, end, fac, angleincr;
+    unsigned int i, nsamps;
+    unsigned int maxframe = 0;
+    unsigned int samptype, endian, bitreverse;
+    double samp, dur, freq, srate, amp, step;
+    double start, end, fac, maxsamp;
     double twopi = 2.0 * M_PI;
+    double angleincr;
     FILE* fp = NULL;
+    float fsamp;
+    short ssamp;
     
     if(argc != ARG_NARGS) {
         printf("Usage: tfork2 outfile.txt dur freq srate amp\n");
@@ -23,7 +37,7 @@ int main(int argc, char** argv) {
     }
     
     fp = fopen(argv[ARG_OUTFILE], "w");
-    if (fp == NULL) {
+    if(fp == NULL) {
         printf("Error creating output file\n", argv[ARG_OUTFILE]);
         return 1;
     }
@@ -32,21 +46,47 @@ int main(int argc, char** argv) {
     freq = atof(argv[ARG_HZ]);
     srate = atof(argv[ARG_SR]);
     amp = atof(argv[ARG_AMP]);
+    samptype = (unsigned int) atoi(argv[ARG_TYPE]);
+    if(samptype > 1) {
+        printf("error: sampletype can be only 0 or 1\n");
+        return 1;
+    }
     nsamps = (int) (dur * srate);
     angleincr = twopi * freq / nsamps;
+    step = dur / nsamps;
     
     start = 1.0;
     end = 1.0e-4;
     maxsamp = 0.0;
     fac = pow(end / start, 1.0 / nsamps);
+    endian = byte_order();
+    printf("Writing %d %s samples \n", nsamps, endianess[endian]);
     
-    for(i=0; i < nsamps; i++) {
-        samp = amp * sin(angleincr * i);
-        samp *= start;
-        start *= fac;
-        fprintf(fp, "%.8lf\n", samp);
-        if(fabs(samp) > maxsamp) {
-            maxsamp = fabs(samp);
+    if(samptype == RAWSAMP_SHORT) {
+        for(i=0; i < nsamps; i++) {
+            samp = amp * sin(angleincr * i);
+            samp *= start;
+            start *= fac;
+            fprintf(fp, "%.8lf\n", samp);
+            if(fabs(samp) > maxsamp) {
+                maxsamp = fabs(samp);
+            }
+        }
+    }
+    else {
+        for(i = 0; i < nsamps; i++){
+            samp = amp * sin(angleincr * i);
+            samp *= start;
+            start *= fac;
+            fsamp = (float) samp;
+            if(fwrite(&fsamp, sizeof(float), 1, fp) != 1){
+                printf("Error writing data to file\n");
+                return 1;
+            }
+            if(fabs(samp) > maxsamp){
+                maxsamp = fabs(samp);
+                maxframe = i;
+            }
         }
     }
     
